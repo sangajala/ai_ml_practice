@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% block title %}Pattern Analysis — Sriram Angajala{% endblock %}
+
+{% block head %}
+<style>
+  .page-banner {
+    background: linear-gradient(135deg, #003087, #005EB8 60%, #41b6e6);
+    border-radius: 10px;
+    padding: 28px 32px;
+    color: #fff;
+    margin-bottom: 28px;
+  }
+  .page-banner h2 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  .page-banner p  { font-size: 14px; opacity: 0.88; }
+
+  .card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 32px 36px;
+    box-shadow: 0 2px 12px rgba(0,48,135,0.1);
+    border-top: 5px solid #41b6e6;
+  }
+  .card h3 {
+    font-size: 17px; font-weight: 700; color: #003087;
+    margin-bottom: 24px; padding-bottom: 12px;
+    border-bottom: 1px solid #e8edee;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 24px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label { font-size: 14px; font-weight: 600; color: #212b32; }
+  label span.hint { font-weight: 400; color: #4c6272; font-size: 13px; margin-left: 4px; }
+
+  input, select {
+    width: 100%; padding: 10px 14px; font-size: 16px;
+    border: 2px solid #adb5bd; border-radius: 4px;
+    background: #fff; color: #212b32;
+    transition: border-color 0.2s; appearance: none;
+  }
+  input:focus, select:focus {
+    outline: none; border-color: #41b6e6;
+    box-shadow: 0 0 0 3px rgba(65,182,230,0.2);
+  }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2341b6e6' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+    padding-right: 36px;
+  }
+
+  .btn-submit {
+    margin-top: 28px; width: 100%; padding: 14px;
+    background: #003087; color: #fff; font-size: 17px; font-weight: 700;
+    border: none; border-radius: 4px; cursor: pointer; transition: background 0.2s;
+  }
+  .btn-submit:hover  { background: #005EB8; }
+  .btn-submit:active { background: #41b6e6; }
+
+  /* ── Result panels ── */
+  #results { display: none; margin-top: 28px; }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .result-panel {
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,48,135,0.1);
+  }
+  .result-panel .panel-label {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 10px; opacity: 0.7;
+  }
+  .result-panel .panel-value {
+    font-size: 32px; font-weight: 900; line-height: 1; margin-bottom: 6px;
+  }
+  .result-panel .panel-sub {
+    font-size: 13px; opacity: 0.8; line-height: 1.4;
+  }
+
+  /* Cluster panel colours */
+  .panel-low      { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+  .panel-moderate { background: #fff8e1; color: #f57f17; border: 1px solid #ffe082; }
+  .panel-high     { background: #fdecea; color: #c62828; border: 1px solid #ef9a9a; }
+
+  /* Anomaly panel */
+  .panel-normal  { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+  .panel-anomaly { background: #fce4ec; color: #880e4f; border: 1px solid #f48fb1; }
+
+  /* Neighbour insight */
+  .insight-card {
+    background: #f0f4f9;
+    border-radius: 8px;
+    padding: 20px 24px;
+    border-left: 4px solid #005EB8;
+  }
+  .insight-card h4 { font-size: 14px; font-weight: 700; color: #003087; margin-bottom: 10px; }
+
+  .insight-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0; border-bottom: 1px solid #dde3ea; font-size: 14px;
+  }
+  .insight-row:last-child { border-bottom: none; }
+  .insight-row .label  { color: #4c6272; }
+  .insight-row .value  { font-weight: 700; color: #212b32; }
+
+  /* Score bar */
+  .score-bar-wrap {
+    background: #e0e0e0; border-radius: 999px; height: 8px;
+    width: 100%; margin: 12px 0 4px; overflow: hidden;
+  }
+  .score-bar-fill { height: 100%; border-radius: 999px; transition: width 0.7s ease; }
+
+  .spinner {
+    display: none; width: 22px; height: 22px;
+    border: 3px solid rgba(255,255,255,0.4); border-top-color: #fff;
+    border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 600px) {
+    .form-grid, .results-grid { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: 1; }
+    .card { padding: 24px 20px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <h2>🔍 Heart Disease Pattern Analysis</h2>
+  <p>Uses unsupervised K-Means clustering and KNN anomaly detection to identify which patient group you resemble and how unusual your profile is.</p>
+</div>
+
+<div class="card">
+  <h3>Enter Your Health Details</h3>
+  <form id="pattern-form">
+    <div class="form-grid">
+
+      <div class="form-group">
+        <label for="age">Age <span class="hint">(years)</span></label>
+        <input type="number" id="age" min="1" max="120" placeholder="e.g. 52" required />
+      </div>
+
+      <div class="form-group">
+        <label for="sex">Gender</label>
+        <select id="sex" required>
+          <option value="" disabled selected>Select gender</option>
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="bp">Resting Blood Pressure <span class="hint">(mmHg)</span></label>
+        <input type="number" id="bp" min="50" max="250" placeholder="e.g. 130" required />
+      </div>
+
+      <div class="form-group">
+        <label for="cholesterol">Cholesterol <span class="hint">(mg/dL)</span></label>
+        <input type="number" id="cholesterol" min="50" max="700" placeholder="e.g. 220" required />
+      </div>
+
+      <div class="form-group">
+        <label for="maxhr">Max Heart Rate <span class="hint">(bpm)</span></label>
+        <input type="number" id="maxhr" min="50" max="250" placeholder="e.g. 150" required />
+      </div>
+
+      <div class="form-group">
+        <label for="oldpeak">ST Depression <span class="hint">(Oldpeak)</span></label>
+        <input type="number" id="oldpeak" min="0" max="10" step="0.1" placeholder="e.g. 1.0" required />
+      </div>
+
+      <div class="form-group">
+        <label for="ecg">Resting ECG</label>
+        <select id="ecg" required>
+          <option value="" disabled selected>Select ECG result</option>
+          <option value="Normal">Normal</option>
+          <option value="ST">ST — ST-T wave abnormality</option>
+          <option value="LVH">LVH — Left ventricular hypertrophy</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="exercise_angina">Exercise-induced Angina</label>
+        <select id="exercise_angina" required>
+          <option value="" disabled selected>Select option</option>
+          <option value="N">No</option>
+          <option value="Y">Yes</option>
+        </select>
+      </div>
+
+    </div>
+
+    <button type="submit" class="btn-submit">
+      <span id="btn-text">Analyse My Pattern</span>
+      <div class="spinner" id="spinner"></div>
+    </button>
+  </form>
+</div>
+
+<!-- Results -->
+<div id="results">
+  <div class="results-grid">
+
+    <!-- Cluster panel -->
+    <div class="result-panel" id="cluster-panel">
+      <div class="panel-label">Patient Cluster</div>
+      <div class="panel-value" id="cluster-value">—</div>
+      <div class="panel-sub"  id="cluster-sub">—</div>
+    </div>
+
+    <!-- Anomaly panel -->
+    <div class="result-panel" id="anomaly-panel">
+      <div class="panel-label">Profile Rarity</div>
+      <div class="panel-value" id="anomaly-value">—</div>
+      <div class="panel-sub"  id="anomaly-sub">—</div>
+    </div>
+
+  </div>
+
+  <!-- Insight card -->
+  <div class="insight-card">
+    <h4>Analysis Breakdown</h4>
+    <div class="insight-row">
+      <span class="label">Cluster heart disease rate</span>
+      <span class="value" id="hd-rate">—</span>
+    </div>
+    <div class="insight-row">
+      <span class="label">3 nearest similar patients — heart disease rate</span>
+      <span class="value" id="neighbour-hd">—</span>
+    </div>
+    <div class="insight-row">
+      <span class="label">KNN anomaly score</span>
+      <span class="value" id="knn-score">—</span>
+    </div>
+    <div class="insight-row">
+      <span class="label">Anomaly threshold (95th percentile)</span>
+      <span class="value" id="threshold">—</span>
+    </div>
+    <div>
+      <div style="font-size:13px;color:#4c6272;margin-top:14px;margin-bottom:4px;">Anomaly score relative to threshold</div>
+      <div class="score-bar-wrap">
+        <div class="score-bar-fill" id="score-bar" style="width:0%"></div>
+      </div>
+      <div style="font-size:12px;color:#4c6272;" id="score-label">—</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById("pattern-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btnText = document.getElementById("btn-text");
+    const spinner = document.getElementById("spinner");
+
+    btnText.style.display = "none";
+    spinner.style.display = "block";
+
+    const payload = {
+      age:             document.getElementById("age").value,
+      sex:             document.getElementById("sex").value,
+      bp:              document.getElementById("bp").value,
+      cholesterol:     document.getElementById("cholesterol").value,
+      maxhr:           document.getElementById("maxhr").value,
+      oldpeak:         document.getElementById("oldpeak").value,
+      ecg:             document.getElementById("ecg").value,
+      exercise_angina: document.getElementById("exercise_angina").value,
+    };
+
+    try {
+      const res  = await fetch("/predict-pattern", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const d = await res.json();
+
+      // Cluster panel
+      const clusterPanel = document.getElementById("cluster-panel");
+      const riskWord = d.risk_label.toLowerCase();
+      clusterPanel.className = "result-panel " +
+        (riskWord.includes("low") ? "panel-low" :
+         riskWord.includes("high") ? "panel-high" : "panel-moderate");
+      document.getElementById("cluster-value").textContent = "Group " + d.cluster_id;
+      document.getElementById("cluster-sub").textContent   = d.risk_label;
+
+      // Anomaly panel
+      const anomalyPanel = document.getElementById("anomaly-panel");
+      anomalyPanel.className = "result-panel " + (d.is_anomaly ? "panel-anomaly" : "panel-normal");
+      document.getElementById("anomaly-value").textContent = d.is_anomaly ? "Unusual" : "Typical";
+      document.getElementById("anomaly-sub").textContent   = d.is_anomaly
+        ? "Your profile is in the top 5% most unusual patterns"
+        : "Your profile matches common patient patterns";
+
+      // Insight rows
+      document.getElementById("hd-rate").textContent       = d.hd_rate + "% of this cluster have heart disease";
+      document.getElementById("neighbour-hd").textContent  = d.neighbour_hd_pct + "% of your 3 nearest neighbours have heart disease";
+      document.getElementById("knn-score").textContent     = d.knn_score;
+      document.getElementById("threshold").textContent     = d.threshold;
+
+      // Score bar
+      const barPct = Math.min(d.anomaly_pct, 100);
+      const bar    = document.getElementById("score-bar");
+      bar.style.width      = barPct + "%";
+      bar.style.background = d.is_anomaly ? "#880e4f" : "#1565c0";
+      document.getElementById("score-label").textContent =
+        d.anomaly_pct + "% of anomaly threshold" + (d.is_anomaly ? " — above threshold ⚠️" : " — within normal range ✓");
+
+      document.getElementById("results").style.display = "block";
+      document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
+
+    } catch (err) {
+      alert("Something went wrong. Please try again.");
+    } finally {
+      btnText.style.display = "inline";
+      spinner.style.display = "none";
+    }
+  });
+</script>
+{% endblock %}

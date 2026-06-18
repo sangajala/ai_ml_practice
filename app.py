@@ -1,9 +1,12 @@
 from flask import Flask, request, jsonify, render_template
 import os
+import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.cluster import KMeans
+from sklearn.neighbors import NearestNeighbors
 
 app = Flask(__name__)
 
@@ -48,7 +51,38 @@ X_train_sc = scaler.fit_transform(X_train)
 rf = RandomForestClassifier(n_estimators=100, random_state=RANDOM_STATE)
 rf.fit(X_train_sc, y_train)
 
-print("Model trained and ready.")
+# ── Unsupervised models (no labels) ──────────────────────────────────────────
+X_all = df_encoded[feature_cols]
+uns_scaler = StandardScaler()
+X_all_sc = uns_scaler.fit_transform(X_all)
+
+kmeans = KMeans(n_clusters=3, random_state=RANDOM_STATE, n_init=10)
+kmeans.fit(X_all_sc)
+
+# Cluster risk labels derived from HeartDisease mean per cluster
+cluster_hd = {}
+for c in range(3):
+    mask = kmeans.labels_ == c
+    cluster_hd[c] = df_encoded.loc[X_all.index[mask], "HeartDisease"].mean()
+
+# Map cluster id → risk label (low/moderate/high)
+def cluster_risk_label(cid):
+    rate = cluster_hd[cid]
+    if rate < 0.30:
+        return "Low Risk Group", rate
+    elif rate < 0.65:
+        return "Moderate Risk Group", rate
+    else:
+        return "High Risk Group", rate
+
+# KNN anomaly detector — fit on full scaled data
+knn_detector = NearestNeighbors(n_neighbors=6)
+knn_detector.fit(X_all_sc)
+all_distances, _ = knn_detector.kneighbors(X_all_sc)
+knn_all_scores = all_distances[:, 1:].mean(axis=1)
+anomaly_threshold = float(np.percentile(knn_all_scores, 95))
+
+print("Models trained and ready.")
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -108,6 +142,79 @@ def predict():
         level = "High Risk"
 
     return jsonify({"risk": risk_pct, "level": level})
+
+
+@app.route("/pattern-analysis")
+def pattern_analysis():
+    return render_template("pattern_analysis.html", active="pattern-analysis")
+
+
+@app.route("/predict-pattern", methods=["POST"])
+def predict_pattern():
+    data = request.get_json()
+
+    try:
+        age         = int(data["age"])
+        sex         = data["sex"]
+        bp          = int(data["bp"])
+        cholesterol = int(data["cholesterol"])
+        ecg         = data["ecg"]
+        maxhr       = int(data["maxhr"])
+        oldpeak     = float(data["oldpeak"])
+        exercise_angina = data["exercise_angina"]
+    except (KeyError, ValueError) as e:
+        return jsonify({"error": f"Invalid input: {e}"}), 400
+
+    raw = {
+        "Age":            age,
+        "Sex":            sex,
+        "ChestPainType":  medians["ChestPainType"],
+        "RestingBP":      bp,
+        "Cholesterol":    cholesterol,
+        "FastingBS":      medians["FastingBS"],
+        "RestingECG":     ecg,
+        "MaxHR":          maxhr,
+        "ExerciseAngina": exercise_angina,
+        "Oldpeak":        oldpeak,
+        "ST_Slope":       medians["ST_Slope"],
+    }
+
+    input_df = pd.DataFrame([raw])
+    input_encoded = pd.get_dummies(input_df, columns=cat_cols, drop_first=True)
+    for col in feature_cols:
+        if col not in input_encoded.columns:
+            input_encoded[col] = 0
+    input_encoded = input_encoded[feature_cols]
+
+    input_sc = uns_scaler.transform(input_encoded)
+
+    # Cluster assignment
+    cluster_id = int(kmeans.predict(input_sc)[0])
+    risk_label, hd_rate = cluster_risk_label(cluster_id)
+
+    # KNN anomaly score
+    distances, _ = knn_detector.kneighbors(input_sc)
+    knn_score = float(distances[0, 1:].mean())
+    is_anomaly = knn_score > anomaly_threshold
+    anomaly_pct = round(min(knn_score / anomaly_threshold * 100, 200), 1)
+
+    # Nearest neighbours indices for context
+    _, indices = knn_detector.kneighbors(input_sc, n_neighbors=4)
+    neighbours = df_clean.iloc[indices[0][1:]].copy()
+    neighbour_hd_rate = round(float(df_encoded.loc[
+        df_clean.index[indices[0][1:]], "HeartDisease"
+    ].mean() * 100), 1)
+
+    return jsonify({
+        "cluster_id":       cluster_id,
+        "risk_label":       risk_label,
+        "hd_rate":          round(hd_rate * 100, 1),
+        "knn_score":        round(knn_score, 3),
+        "threshold":        round(anomaly_threshold, 3),
+        "is_anomaly":       bool(is_anomaly),
+        "anomaly_pct":      anomaly_pct,
+        "neighbour_hd_pct": neighbour_hd_rate,
+    })
 
 
 if __name__ == "__main__":
