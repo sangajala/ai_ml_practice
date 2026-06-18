@@ -54,7 +54,12 @@ print("Model trained and ready.")
 # ── Routes ────────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("home.html", active="home")
+
+
+@app.route("/heart-risk")
+def heart_risk():
+    return render_template("heart_risk.html", active="heart-risk")
 
 
 @app.route("/predict", methods=["POST"])

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Welcome — Sriram Angajala{% endblock %}
+
+{% block head %}
+<style>
+  .welcome-hero {
+    background: linear-gradient(135deg, #003087 0%, #005EB8 60%, #41b6e6 100%);
+    border-radius: 12px;
+    padding: 60px 48px;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 40px;
+    box-shadow: 0 4px 20px rgba(0,48,135,0.25);
+  }
+  .welcome-hero h1 {
+    font-size: 38px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+  .welcome-hero h1 span {
+    display: block;
+    font-size: 22px;
+    font-weight: 400;
+    opacity: 0.85;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+  .welcome-hero p {
+    font-size: 16px;
+    opacity: 0.88;
+    max-width: 520px;
+    margin: 0 auto 28px;
+    line-height: 1.6;
+  }
+  .hero-btn {
+    display: inline-block;
+    background: #fff;
+    color: #003087;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 12px 28px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .hero-btn:hover { background: #e8f0fb; transform: translateY(-1px); }
+
+  /* ── Cards ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+  }
+  .tool-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 28px 24px;
+    border-top: 4px solid #005EB8;
+    box-shadow: 0 2px 10px rgba(0,48,135,0.08);
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: box-shadow 0.2s, transform 0.15s;
+  }
+  .tool-card:hover {
+    box-shadow: 0 6px 20px rgba(0,48,135,0.15);
+    transform: translateY(-2px);
+  }
+  .tool-card .card-icon { font-size: 32px; }
+  .tool-card h3 { font-size: 16px; font-weight: 700; color: #003087; }
+  .tool-card p  { font-size: 13px; color: #4c6272; line-height: 1.5; }
+  .card-arrow   { font-size: 13px; color: #005EB8; font-weight: 600; margin-top: auto; }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #003087;
+    margin-bottom: 16px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="welcome-hero">
+  <h1>
+    <span>Welcome to</span>
+    Sriram Angajala's World
+  </h1>
+  <p>An AI-powered health analytics platform — explore tools that predict, analyse, and visualise health outcomes using machine learning.</p>
+  <a href="/heart-risk" class="hero-btn">Try Heart Risk Checker →</a>
+</div>
+
+<p class="section-title">Available Tools</p>
+<div class="cards-grid">
+  <a href="/heart-risk" class="tool-card">
+    <div class="card-icon">❤️</div>
+    <h3>Heart Risk Checker</h3>
+    <p>Enter your age, gender, blood pressure, cholesterol and ECG result to get an AI-predicted heart disease risk score.</p>
+    <span class="card-arrow">Open tool →</span>
+  </a>
+</div>
+{% endblock %}

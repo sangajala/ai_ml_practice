@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Sriram Angajala{% endblock %}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Frutiger", "Arial", sans-serif;
+      background: #f0f4f9;
+      color: #212b32;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Top header ── */
+    header {
+      background: #003087;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+    }
+    .nhs-badge {
+      background: #fff;
+      color: #003087;
+      font-weight: 900;
+      font-size: 16px;
+      padding: 3px 9px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+      flex-shrink: 0;
+    }
+    header .site-title {
+      color: #fff;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      margin-left: auto;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px; height: 2px;
+      background: #fff;
+      margin: 5px 0;
+      border-radius: 2px;
+      transition: 0.2s;
+    }
+
+    /* ── Layout shell ── */
+    .shell {
+      display: flex;
+      flex: 1;
+      margin-top: 60px;
+      min-height: calc(100vh - 60px);
+    }
+
+    /* ── Sidebar ── */
+    nav.sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      background: #003087;
+      min-height: 100%;
+      position: fixed;
+      top: 60px;
+      left: 0;
+      bottom: 0;
+      overflow-y: auto;
+      transition: transform 0.25s ease;
+      z-index: 90;
+    }
+    .sidebar-section {
+      padding: 20px 0 8px;
+    }
+    .sidebar-section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.45);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      padding: 0 20px 8px;
+    }
+    nav.sidebar a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 20px;
+      color: rgba(255,255,255,0.82);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      border-left: 3px solid transparent;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    nav.sidebar a:hover {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+    }
+    nav.sidebar a.active {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border-left-color: #41b6e6;
+      font-weight: 700;
+    }
+    nav.sidebar a .icon {
+      font-size: 17px;
+      width: 22px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* ── Main content ── */
+    main {
+      margin-left: 240px;
+      flex: 1;
+      min-width: 0;
+      padding: 36px 32px 60px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-left: 240px;
+      background: #002060;
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+      text-align: center;
+      padding: 14px 24px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 720px) {
+      .hamburger { display: block; }
+      nav.sidebar { transform: translateX(-100%); }
+      nav.sidebar.open { transform: translateX(0); }
+      main, footer { margin-left: 0; }
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<header>
+  <span class="nhs-badge">NHS</span>
+  <span class="site-title">Sriram Angajala — Health Analytics</span>
+  <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+
+<div class="shell">
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Navigation</div>
+      <a href="/" class="{% if active == 'home' %}active{% endif %}">
+        <span class="icon">🏠</span> Home
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Health Tools</div>
+      <a href="/heart-risk" class="{% if active == 'heart-risk' %}active{% endif %}">
+        <span class="icon">❤️</span> Heart Risk Checker
+      </a>
+    </div>
+  </nav>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<footer>
+  &copy; Sriram Angajala &nbsp;|&nbsp; Powered by Random Forest ML &nbsp;|&nbsp; For educational purposes only
+</footer>
+
+<script>
+  document.getElementById("hamburger").addEventListener("click", () => {
+    document.getElementById("sidebar").classList.toggle("open");
+  });
+</script>
+
+{% block scripts %}{% endblock %}
+
+</body>
+</html>
