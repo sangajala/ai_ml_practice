@@ -33,6 +33,7 @@ medians = {
     "ExerciseAngina": df_clean["ExerciseAngina"].mode()[0],
     "ST_Slope":       df_clean["ST_Slope"].mode()[0],
     "ChestPainType":  df_clean["ChestPainType"].mode()[0],
+    "RestingECG":     df_clean["RestingECG"].mode()[0],
 }
 
 cat_cols = ["Sex", "ChestPainType", "RestingECG", "ExerciseAngina", "ST_Slope"]
@@ -154,27 +155,21 @@ def predict_pattern():
     data = request.get_json()
 
     try:
-        age         = int(data["age"])
-        sex         = data["sex"]
-        bp          = int(data["bp"])
-        cholesterol = int(data["cholesterol"])
-        ecg         = data["ecg"]
-        maxhr       = int(data["maxhr"])
-        oldpeak     = float(data["oldpeak"])
-        exercise_angina = data["exercise_angina"]
+        age     = int(data["age"])
+        oldpeak = float(data["oldpeak"])
     except (KeyError, ValueError) as e:
         return jsonify({"error": f"Invalid input: {e}"}), 400
 
     raw = {
         "Age":            age,
-        "Sex":            sex,
+        "Sex":            medians.get("Sex", "M"),
         "ChestPainType":  medians["ChestPainType"],
-        "RestingBP":      bp,
-        "Cholesterol":    cholesterol,
+        "RestingBP":      int(df_clean["RestingBP"].median()),
+        "Cholesterol":    medians["Cholesterol"],
         "FastingBS":      medians["FastingBS"],
-        "RestingECG":     ecg,
-        "MaxHR":          maxhr,
-        "ExerciseAngina": exercise_angina,
+        "RestingECG":     medians["RestingECG"],
+        "MaxHR":          medians["MaxHR"],
+        "ExerciseAngina": medians["ExerciseAngina"],
         "Oldpeak":        oldpeak,
         "ST_Slope":       medians["ST_Slope"],
     }
