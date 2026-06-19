@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block title %}Quick Risk Check — Sriram Angajala{% endblock %}
+
+{% block head %}
+<style>
+  .page-banner {
+    background: linear-gradient(135deg, #003087, #005EB8 60%, #41b6e6);
+    border-radius: 10px;
+    padding: 28px 32px;
+    color: #fff;
+    margin-bottom: 32px;
+  }
+  .page-banner h2 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  .page-banner p  { font-size: 14px; opacity: 0.88; }
+
+  /* ── Input card ── */
+  .input-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 40px 44px;
+    box-shadow: 0 2px 16px rgba(0,48,135,0.1);
+    border-top: 5px solid #005EB8;
+    max-width: 500px;
+  }
+  .input-card h3 {
+    font-size: 17px; font-weight: 700; color: #003087;
+    margin-bottom: 28px; padding-bottom: 12px;
+    border-bottom: 1px solid #e8edee;
+  }
+
+  .field-wrap { margin-bottom: 28px; }
+  label {
+    display: block; font-size: 14px; font-weight: 700;
+    color: #212b32; margin-bottom: 8px;
+  }
+  label span.hint {
+    font-weight: 400; color: #4c6272; font-size: 13px; margin-left: 6px;
+  }
+
+  .input-large {
+    width: 100%; padding: 14px 18px; font-size: 22px; font-weight: 600;
+    border: 2px solid #adb5bd; border-radius: 8px;
+    background: #fff; color: #212b32; text-align: center;
+    transition: border-color 0.2s; letter-spacing: 1px;
+  }
+  .input-large:focus {
+    outline: none; border-color: #005EB8;
+    box-shadow: 0 0 0 3px rgba(0,94,184,0.2);
+  }
+  .field-note { font-size: 12px; color: #4c6272; margin-top: 6px; text-align: center; }
+
+  /* ── BP visual scale ── */
+  .bp-scale {
+    display: flex; margin-top: 10px; border-radius: 6px; overflow: hidden;
+    height: 8px;
+  }
+  .bp-scale div { flex: 1; }
+  .bp-normal   { background: #2e7d32; }
+  .bp-elevated { background: #f9a825; }
+  .bp-h1       { background: #ef6c00; }
+  .bp-h2       { background: #c62828; }
+  .bp-labels {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: #4c6272; margin-top: 4px;
+  }
+
+  .btn-submit {
+    width: 100%; padding: 16px; background: #005EB8; color: #fff;
+    font-size: 18px; font-weight: 700; border: none; border-radius: 8px;
+    cursor: pointer; transition: background 0.2s; margin-top: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .btn-submit:hover  { background: #003087; }
+  .btn-submit:active { background: #002060; }
+
+  .spinner {
+    display: none; width: 22px; height: 22px;
+    border: 3px solid rgba(255,255,255,0.4); border-top-color: #fff;
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Result ── */
+  #result { display: none; margin-top: 32px; max-width: 500px; }
+
+  .risk-card {
+    border-radius: 12px; padding: 36px 32px;
+    text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    margin-bottom: 16px;
+  }
+  .risk-card.low      { background: #e8f5e9; border: 2px solid #2e7d32; }
+  .risk-card.moderate { background: #fff8e1; border: 2px solid #f9a825; }
+  .risk-card.high     { background: #fdecea; border: 2px solid #c62828; }
+
+  .risk-emoji { font-size: 48px; margin-bottom: 10px; }
+  .risk-pct   {
+    font-size: 64px; font-weight: 900; line-height: 1; margin-bottom: 6px;
+  }
+  .low      .risk-pct { color: #2e7d32; }
+  .moderate .risk-pct { color: #f57f17; }
+  .high     .risk-pct { color: #c62828; }
+
+  .risk-level { font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+  .low      .risk-level { color: #2e7d32; }
+  .moderate .risk-level { color: #f57f17; }
+  .high     .risk-level { color: #c62828; }
+
+  /* ── Progress bar ── */
+  .bar-wrap {
+    background: #e0e0e0; border-radius: 999px;
+    height: 12px; margin: 12px 0 6px; overflow: hidden;
+  }
+  .bar-fill { height: 100%; border-radius: 999px; transition: width 0.7s ease; }
+  .low      .bar-fill { background: #2e7d32; }
+  .moderate .bar-fill { background: #f9a825; }
+  .high     .bar-fill { background: #c62828; }
+
+  /* ── BP chip ── */
+  .bp-chip {
+    display: inline-block; padding: 5px 14px; border-radius: 999px;
+    font-size: 13px; font-weight: 700; margin-top: 10px;
+  }
+  .bp-chip.Normal       { background: #e8f5e9; color: #2e7d32; }
+  .bp-chip.Elevated     { background: #fff8e1; color: #f57f17; }
+  .bp-chip.High-Stage-1 { background: #fff3e0; color: #ef6c00; }
+  .bp-chip.High-Stage-2 { background: #fdecea; color: #c62828; }
+
+  .disclaimer {
+    font-size: 12px; color: #4c6272; text-align: center;
+    margin-top: 10px; line-height: 1.6;
+  }
+
+  /* ── Context pills ── */
+  .context-row {
+    display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+    margin-top: 12px;
+  }
+  .ctx-pill {
+    background: #f0f4f9; border: 1px solid #d0daea;
+    border-radius: 8px; padding: 8px 16px;
+    font-size: 13px; color: #212b32; text-align: center;
+  }
+  .ctx-pill strong { display: block; font-size: 16px; color: #003087; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <h2>⚡ Quick Heart Risk Check</h2>
+  <p>Enter just your age and blood pressure — we'll estimate your heart disease risk in seconds.</p>
+</div>
+
+<div class="input-card">
+  <h3>Your Details</h3>
+  <form id="quick-form">
+
+    <div class="field-wrap">
+      <label for="age">Age <span class="hint">years</span></label>
+      <input class="input-large" type="number" id="age" min="1" max="120"
+             placeholder="e.g.  52" required />
+    </div>
+
+    <div class="field-wrap">
+      <label for="bp">Resting Blood Pressure <span class="hint">mmHg</span></label>
+      <input class="input-large" type="number" id="bp" min="50" max="250"
+             placeholder="e.g.  130" required />
+      <div class="bp-scale">
+        <div class="bp-normal"></div>
+        <div class="bp-elevated"></div>
+        <div class="bp-h1"></div>
+        <div class="bp-h2"></div>
+      </div>
+      <div class="bp-labels">
+        <span>Normal &lt;120</span>
+        <span>Elevated 120–129</span>
+        <span>Stage 1 130–139</span>
+        <span>Stage 2 ≥140</span>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-submit">
+      <span id="btn-text">Check Risk</span>
+      <div class="spinner" id="spinner"></div>
+    </button>
+  </form>
+</div>
+
+<!-- Result -->
+<div id="result">
+  <div class="risk-card" id="risk-card">
+    <div class="risk-emoji" id="risk-emoji">—</div>
+    <div class="risk-pct"   id="risk-pct">—</div>
+    <div class="risk-level" id="risk-level">—</div>
+    <div class="bar-wrap">
+      <div class="bar-fill" id="bar-fill" style="width:0%"></div>
+    </div>
+    <div>
+      <span class="bp-chip" id="bp-chip">—</span>
+    </div>
+    <div class="context-row" id="context-row"></div>
+    <p class="disclaimer">
+      Estimated using a Random Forest model trained on 700+ patients.<br>
+      Not a medical diagnosis — please consult your doctor.
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById("quick-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btnText = document.getElementById("btn-text");
+    const spinner = document.getElementById("spinner");
+    btnText.style.display = "none";
+    spinner.style.display = "block";
+
+    const age = document.getElementById("age").value;
+    const bp  = document.getElementById("bp").value;
+
+    try {
+      const res  = await fetch("/predict-quick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ age, bp }),
+      });
+      const d = await res.json();
+
+      const cls = d.level.toLowerCase().split(" ")[0];
+      const emojis = { low: "✅", moderate: "⚠️", high: "🔴" };
+
+      const card = document.getElementById("risk-card");
+      card.className = "risk-card " + cls;
+      document.getElementById("risk-emoji").textContent  = emojis[cls] || "❓";
+      document.getElementById("risk-pct").textContent    = d.risk + "%";
+      document.getElementById("risk-level").textContent  = d.level;
+      document.getElementById("bar-fill").style.width    = Math.min(d.risk, 100) + "%";
+
+      // BP chip
+      const chip     = document.getElementById("bp-chip");
+      const chipClass = d.bp_category.replace(/ /g, "-");
+      chip.textContent  = "BP: " + d.bp_category;
+      chip.className    = "bp-chip " + chipClass;
+
+      // Context pills
+      document.getElementById("context-row").innerHTML = `
+        <div class="ctx-pill"><strong>${age}</strong>Age</div>
+        <div class="ctx-pill"><strong>${bp} mmHg</strong>Blood Pressure</div>
+      `;
+
+      document.getElementById("result").style.display = "block";
+      document.getElementById("result").scrollIntoView({ behavior: "smooth", block: "start" });
+
+    } catch (err) {
+      alert("Something went wrong. Please try again.");
+    } finally {
+      btnText.style.display = "inline";
+      spinner.style.display = "none";
+    }
+  });
+</script>
+{% endblock %}

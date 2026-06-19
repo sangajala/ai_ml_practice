@@ -212,6 +212,65 @@ def predict_pattern():
     })
 
 
+@app.route("/quick-check")
+def quick_check():
+    return render_template("quick_check.html", active="quick-check")
+
+
+@app.route("/predict-quick", methods=["POST"])
+def predict_quick():
+    data = request.get_json()
+    try:
+        age = int(data["age"])
+        bp  = int(data["bp"])
+    except (KeyError, ValueError) as e:
+        return jsonify({"error": f"Invalid input: {e}"}), 400
+
+    raw = {
+        "Age":            age,
+        "Sex":            "M",
+        "ChestPainType":  medians["ChestPainType"],
+        "RestingBP":      bp,
+        "Cholesterol":    medians["Cholesterol"],
+        "FastingBS":      medians["FastingBS"],
+        "RestingECG":     medians["RestingECG"],
+        "MaxHR":          medians["MaxHR"],
+        "ExerciseAngina": medians["ExerciseAngina"],
+        "Oldpeak":        medians["Oldpeak"],
+        "ST_Slope":       medians["ST_Slope"],
+    }
+
+    input_df      = pd.DataFrame([raw])
+    input_encoded = pd.get_dummies(input_df, columns=cat_cols, drop_first=True)
+    for col in feature_cols:
+        if col not in input_encoded.columns:
+            input_encoded[col] = 0
+    input_encoded = input_encoded[feature_cols]
+
+    input_sc  = scaler.transform(input_encoded)
+    prob      = rf.predict_proba(input_sc)[0][1]
+    risk_pct  = round(prob * 100, 1)
+
+    if risk_pct < 30:
+        level = "Low Risk"
+    elif risk_pct < 60:
+        level = "Moderate Risk"
+    else:
+        level = "High Risk"
+
+    # BP category for context
+    if bp < 120:
+        bp_cat = "Normal"
+    elif bp < 130:
+        bp_cat = "Elevated"
+    elif bp < 140:
+        bp_cat = "High Stage 1"
+    else:
+        bp_cat = "High Stage 2"
+
+    return jsonify({"risk": risk_pct, "level": level, "bp_category": bp_cat})
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", debug=False, port=port)
