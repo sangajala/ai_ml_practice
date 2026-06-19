@@ -221,4 +221,110 @@ plt.xlabel("Avg Heart Disease Rate Among K Nearest Neighbours")
 plt.ylabel("Count"); plt.legend(); plt.grid(alpha=0.3)
 plt.tight_layout(); plt.show()
 
+# ─────────────────────────────────────────────────────────────────────────────
+# PART F — Age Group Analysis with KNN Patterns
+# ─────────────────────────────────────────────────────────────────────────────
+print("=== PART F: Age Group Analysis ===")
+
+bins   = [0,  40,  50,  60,  70, 120]
+labels = ["<40", "40–49", "50–59", "60–69", "70+"]
+df_clean["AgeGroup"] = pd.cut(df_clean["Age"], bins=bins, labels=labels, right=False)
+
+# Summary table
+age_summary = df_clean.groupby("AgeGroup", observed=True).agg(
+    Count          = ("Age",              "count"),
+    Avg_Age        = ("Age",              "mean"),
+    Avg_BP         = ("RestingBP",        "mean"),
+    Avg_Cholesterol= ("Cholesterol",      "mean"),
+    Avg_MaxHR      = ("MaxHR",            "mean"),
+    Avg_Oldpeak    = ("Oldpeak",          "mean"),
+    HD_Rate        = ("HeartDisease",     "mean"),
+    Anomaly_Rate   = ("Neighbour_HD_Rate","mean"),
+).round(2)
+
+print(age_summary.to_string())
+print()
+
+# ── Plot 1: Count & Heart Disease rate per age group ──────────────────────────
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+colors = ["#41b6e6", "#005EB8", "#003087", "#c62828", "#7b0000"]
+axes[0].bar(age_summary.index, age_summary["Count"], color=colors, edgecolor="white")
+axes[0].set_title("Patient Count by Age Group", fontweight="bold")
+axes[0].set_xlabel("Age Group"); axes[0].set_ylabel("Count")
+for i, (ag, row) in enumerate(age_summary.iterrows()):
+    axes[0].text(i, row["Count"] + 1, str(int(row["Count"])),
+                 ha="center", va="bottom", fontsize=11, fontweight="bold")
+axes[0].grid(axis="y", alpha=0.3)
+
+axes[1].bar(age_summary.index, age_summary["HD_Rate"] * 100, color=colors, edgecolor="white")
+axes[1].set_title("Heart Disease Rate by Age Group (%)", fontweight="bold")
+axes[1].set_xlabel("Age Group"); axes[1].set_ylabel("Heart Disease Rate (%)")
+for i, (ag, row) in enumerate(age_summary.iterrows()):
+    axes[1].text(i, row["HD_Rate"] * 100 + 0.5, f"{row['HD_Rate']*100:.1f}%",
+                 ha="center", va="bottom", fontsize=10, fontweight="bold")
+axes[1].set_ylim(0, 100); axes[1].grid(axis="y", alpha=0.3)
+
+plt.suptitle("Part F — Age Group Overview", fontsize=13, fontweight="bold")
+plt.tight_layout(); plt.show()
+
+# ── Plot 2: Feature profiles per age group (box plots) ────────────────────────
+fig, axes = plt.subplots(2, 2, figsize=(13, 9))
+axes = axes.flatten()
+profile_features = ["RestingBP", "Cholesterol", "MaxHR", "Oldpeak"]
+
+for i, feat in enumerate(profile_features):
+    data = [df_clean[df_clean["AgeGroup"] == ag][feat].dropna().values
+            for ag in labels]
+    bp_plot = axes[i].boxplot(data, patch_artist=True,
+                               boxprops=dict(facecolor="#d6e8f7", color="#003087"),
+                               medianprops=dict(color="#c62828", linewidth=2),
+                               whiskerprops=dict(color="#003087"),
+                               capprops=dict(color="#003087"))
+    axes[i].set_xticklabels(labels)
+    axes[i].set_title(feat, fontweight="bold")
+    axes[i].set_xlabel("Age Group"); axes[i].grid(axis="y", alpha=0.3)
+
+plt.suptitle("Part F — Feature Distribution by Age Group", fontsize=13, fontweight="bold")
+plt.tight_layout(); plt.show()
+
+# ── Plot 3: KNN anomaly rate per age group ────────────────────────────────────
+df_clean["KNN_Anomaly"] = anomaly_knn.astype(int)
+df_clean["LOF_Anomaly"] = anomaly_lof.astype(int)
+
+anom_by_age = df_clean.groupby("AgeGroup", observed=True).agg(
+    KNN_Anomaly_Rate = ("KNN_Anomaly", "mean"),
+    LOF_Anomaly_Rate = ("LOF_Anomaly", "mean"),
+).round(3) * 100
+
+print("Anomaly rates by age group (%):")
+print(anom_by_age.to_string())
+print()
+
+x    = np.arange(len(labels))
+w    = 0.35
+fig, ax = plt.subplots(figsize=(9, 5))
+ax.bar(x - w/2, anom_by_age["KNN_Anomaly_Rate"], width=w,
+       color="#003087", label="KNN Anomaly %", edgecolor="white")
+ax.bar(x + w/2, anom_by_age["LOF_Anomaly_Rate"], width=w,
+       color="#c62828", label="LOF Anomaly %",  edgecolor="white")
+ax.set_xticks(x); ax.set_xticklabels(labels)
+ax.set_title("KNN & LOF Anomaly Rate by Age Group", fontsize=12, fontweight="bold")
+ax.set_xlabel("Age Group"); ax.set_ylabel("Anomaly Rate (%)")
+ax.legend(); ax.grid(axis="y", alpha=0.3)
+plt.tight_layout(); plt.show()
+
+# ── Plot 4: PCA scatter coloured by age group ─────────────────────────────────
+age_palette = dict(zip(labels, colors))
+plt.figure(figsize=(8, 6))
+for ag, col in age_palette.items():
+    mask = df_clean["AgeGroup"] == ag
+    plt.scatter(X_2d[mask, 0], X_2d[mask, 1],
+                color=col, alpha=0.6, s=30, label=ag)
+plt.title("PCA Projection — Coloured by Age Group", fontsize=12, fontweight="bold")
+plt.xlabel(f"PC1 ({var[0]:.1f}% variance)")
+plt.ylabel(f"PC2 ({var[1]:.1f}% variance)")
+plt.legend(title="Age Group"); plt.grid(alpha=0.3)
+plt.tight_layout(); plt.show()
+
 print("Done.")
