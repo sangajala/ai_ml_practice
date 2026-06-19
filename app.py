@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.cluster import KMeans
-from sklearn.neighbors import NearestNeighbors
+from sklearn.neighbors import NearestNeighbors, KNeighborsClassifier
 
 app = Flask(__name__)
 
@@ -51,6 +51,9 @@ X_train_sc = scaler.fit_transform(X_train)
 
 rf = RandomForestClassifier(n_estimators=100, random_state=RANDOM_STATE)
 rf.fit(X_train_sc, y_train)
+
+knn_clf = KNeighborsClassifier(n_neighbors=5)
+knn_clf.fit(X_train_sc, y_train)
 
 # ── Unsupervised models (no labels) ──────────────────────────────────────────
 X_all = df_encoded[feature_cols]
@@ -248,7 +251,7 @@ def predict_quick():
     input_encoded = input_encoded[feature_cols]
 
     input_sc  = scaler.transform(input_encoded)
-    prob      = rf.predict_proba(input_sc)[0][1]
+    prob      = knn_clf.predict_proba(input_sc)[0][1]
     risk_pct  = round(prob * 100, 1)
 
     if risk_pct < 30:
